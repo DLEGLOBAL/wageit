@@ -1,41 +1,60 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlusCircle, Search, Flame, TrendingUp, Zap, Sparkles, Lightbulb } from "lucide-react";
+import { PlusCircle, Search, Flame, TrendingUp, Zap, Sparkles, Lightbulb, SlidersHorizontal } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { motion } from "framer-motion";
 import WagerCard from "../components/wager/WagerCard";
 import EmptyState from "../components/common/EmptyState";
 import { toast } from "sonner";
 
 export default function Home() {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState(null);
   const [tab, setTab] = useState("all");
   const [search, setSearch] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [sortBy, setSortBy] = useState("-created_date");
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
   const { data: wagers = [], isLoading } = useQuery({
-    queryKey: ["wagers", tab],
+    queryKey: ["wagers", tab, sortBy],
     queryFn: async () => {
       if (tab === "my" && user?.email) {
-        const created = await base44.entities.Wager.filter({ creator_email: user.email }, "-created_date", 50);
-        const opponent = await base44.entities.Wager.filter({ opponent_email: user.email }, "-created_date", 50);
+        const created = await base44.entities.Wager.filter({ creator_email: user.email }, sortBy, 100);
+        const opponent = await base44.entities.Wager.filter({ opponent_email: user.email }, sortBy, 100);
         const combined = [...created, ...opponent];
         const unique = Array.from(new Map(combined.map(w => [w.id, w])).values());
         return unique.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
       }
-      return base44.entities.Wager.filter({ privacy: "public" }, "-created_date", 50);
+      return base44.entities.Wager.filter({ privacy: "public" }, sortBy, 100);
     },
     enabled: tab !== "my" || !!user?.email,
+    refetchInterval: 30000,
   });
+
+  useEffect(() => {
+    if (!wagers.length) return;
+    const unsubscribe = base44.entities.Wager.subscribe((event) => {
+      if (event.type === 'create' || event.type === 'update') {
+        queryClient.invalidateQueries({ queryKey: ["wagers"] });
+      }
+    });
+    return unsubscribe;
+  }, [wagers.length]);
 
   const filtered = wagers.filter(w => {
     if (search && !w.title?.toLowerCase().includes(search.toLowerCase())) return false;
@@ -89,17 +108,40 @@ export default function Home() {
         </div>
       )}
 
-      {/* Search */}
+      {/* Search & Sort */}
       <div className="px-4 mb-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-          <input
-            type="text"
-            placeholder="Search wagers..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)]/50 transition-colors"
-          />
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+            <input
+              type="text"
+              placeholder="Search wagers..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)]/50 transition-colors"
+            />
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="border-[var(--border)] text-white hover:bg-[var(--surface)] rounded-xl px-4">
+                <SlidersHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-[var(--surface)] border-[var(--border)]">
+              <DropdownMenuItem onClick={() => setSortBy("-created_date")} className="text-white cursor-pointer">
+                Newest First
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy("created_date")} className="text-white cursor-pointer">
+                Oldest First
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy("-stake_amount")} className="text-white cursor-pointer">
+                Highest Stake
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy("stake_amount")} className="text-white cursor-pointer">
+                Lowest Stake
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

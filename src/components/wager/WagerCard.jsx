@@ -31,9 +31,10 @@ export default function WagerCard({ wager, index = 0 }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.3 }}
+      whileHover={{ scale: 1.02 }}
     >
       <Link to={createPageUrl(`WagerDetails?id=${wager.id}`)}>
-        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 hover:border-[var(--accent)]/30 transition-all duration-300 group">
+        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 hover:border-[var(--accent)]/30 transition-all duration-300 group hover:shadow-xl hover:shadow-[var(--accent)]/5">
           <div className="flex items-start justify-between mb-3">
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-white truncate group-hover:text-[var(--accent)] transition-colors">

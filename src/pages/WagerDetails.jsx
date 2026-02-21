@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import PageHeader from "../components/common/PageHeader";
+import ShareButton from "../components/common/ShareButton";
+import WagerComments from "../components/wager/WagerComments";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,7 +40,18 @@ export default function WagerDetails() {
     queryFn: () => base44.entities.Wager.filter({ id: wagerId }),
     select: data => data[0],
     enabled: !!wagerId,
+    refetchInterval: 10000,
   });
+
+  useEffect(() => {
+    if (!wagerId) return;
+    const unsubscribe = base44.entities.Wager.subscribe((event) => {
+      if (event.id === wagerId) {
+        qc.invalidateQueries({ queryKey: ["wager", wagerId] });
+      }
+    });
+    return unsubscribe;
+  }, [wagerId]);
 
   const updateWager = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Wager.update(id, data),
@@ -111,7 +124,11 @@ export default function WagerDetails() {
 
   return (
     <div className="max-w-lg mx-auto">
-      <PageHeader title="Wager Details" backButton />
+      <PageHeader 
+        title="Wager Details" 
+        backButton 
+        rightAction={<ShareButton title={wager?.title} />}
+      />
 
       <div className="px-4 py-6 space-y-5">
         {/* Status & Title */}
@@ -251,6 +268,13 @@ export default function WagerDetails() {
             </div>
           )}
         </div>
+
+        {/* Comments Section */}
+        {wager && (
+          <div className="mt-6 pt-6 border-t border-[var(--border)]">
+            <WagerComments wagerId={wager.id} />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import PageHeader from "../components/common/PageHeader";
 import StatCard from "../components/common/StatCard";
+import AchievementBadges from "../components/profile/AchievementBadges";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,6 +38,12 @@ export default function Profile() {
         reputation_score: 100,
       });
     },
+    enabled: !!user?.email,
+  });
+
+  const { data: achievements = [] } = useQuery({
+    queryKey: ["achievements", user?.email],
+    queryFn: () => base44.entities.Achievement.filter({ user_email: user.email }),
     enabled: !!user?.email,
   });
 
@@ -104,6 +111,11 @@ export default function Profile() {
             <span><strong className="text-white">{profile?.following?.length || 0}</strong> following</span>
           </div>
         </motion.div>
+
+        {/* Achievements */}
+        {achievements.length > 0 && (
+          <AchievementBadges achievements={achievements} />
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3">

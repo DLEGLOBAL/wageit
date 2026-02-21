@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import PageHeader from "../components/common/PageHeader";
-import { Zap, Trophy, Clock, DollarSign, Loader2, Users, Sparkles } from "lucide-react";
+import { Zap, Trophy, Clock, DollarSign, Loader2, Users, Sparkles, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
 export default function CreateWager() {
@@ -18,6 +18,8 @@ export default function CreateWager() {
   const [loading, setLoading] = useState(false);
   const [showMatchmaking, setShowMatchmaking] = useState(false);
   const [matches, setMatches] = useState([]);
+  const [generatingImage, setGeneratingImage] = useState(false);
+  const [coverImage, setCoverImage] = useState("");
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -49,6 +51,23 @@ export default function CreateWager() {
     setShowMatchmaking(true);
     toast.dismiss();
     toast.success("Opponents found!");
+  };
+
+  const generateCoverImage = async () => {
+    if (!form.title || !form.description) {
+      return toast.error("Add a title and description first");
+    }
+    setGeneratingImage(true);
+    toast.loading("AI generating cover image...");
+    const { data } = await base44.functions.invoke('aiGenerateWagerImage', {
+      title: form.title,
+      description: form.description,
+      wager_type: form.wager_type
+    });
+    setCoverImage(data.image_url);
+    setGeneratingImage(false);
+    toast.dismiss();
+    toast.success("Cover image generated!");
   };
 
   const handleSubmit = async () => {
@@ -101,7 +120,17 @@ export default function CreateWager() {
 
         {/* Description */}
         <div className="space-y-2">
-          <Label className="text-sm text-[var(--text-muted)]">Description</Label>
+          <div className="flex items-center justify-between">
+            <Label className="text-sm text-[var(--text-muted)]">Description</Label>
+            <button
+              type="button"
+              onClick={generateCoverImage}
+              disabled={generatingImage}
+              className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1"
+            >
+              <Sparkles className="w-3 h-3" /> AI Cover
+            </button>
+          </div>
           <Textarea
             placeholder="Describe the terms of your wager..."
             value={form.description}
@@ -109,6 +138,20 @@ export default function CreateWager() {
             className="bg-[var(--surface)] border-[var(--border)] text-white rounded-xl min-h-[100px]"
           />
         </div>
+
+        {/* Cover Image Preview */}
+        {coverImage && (
+          <div className="relative rounded-xl overflow-hidden border border-[var(--border)]">
+            <img src={coverImage} alt="Cover" className="w-full h-48 object-cover" />
+            <button
+              type="button"
+              onClick={() => setCoverImage("")}
+              className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         {/* Type */}
         <div className="space-y-2">
