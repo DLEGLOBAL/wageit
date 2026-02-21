@@ -28,18 +28,32 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Insufficient funds' }, { status: 400 });
         }
 
+        // Calculate 2% platform fee
+        const platformFee = Math.round(cents * 0.02);
+        const netPayout = cents - platformFee;
+        const totalDeducted = cents;
+
         // Update wallet balance
         await base44.asServiceRole.entities.Wallet.update(wallet.id, {
-            balance: wallet.balance - cents,
-            total_withdrawn: (wallet.total_withdrawn || 0) + cents
+            balance: wallet.balance - totalDeducted,
+            total_withdrawn: (wallet.total_withdrawn || 0) + netPayout
         });
 
-        // Create transaction record
+        // Create withdrawal transaction
         await base44.asServiceRole.entities.Transaction.create({
             user_email: user.email,
             type: 'withdrawal',
-            amount: cents,
-            description: `Withdrawal $${amount.toFixed(2)}`,
+            amount: netPayout,
+            description: `Withdrawal $${(netPayout / 100).toFixed(2)}`,
+            status: 'completed'
+        });
+
+        // Create platform fee transaction
+        await base44.asServiceRole.entities.Transaction.create({
+            user_email: user.email,
+            type: 'platform_fee',
+            amount: platformFee,
+            description: `Platform fee (2% of withdrawal)`,
             status: 'completed'
         });
 
@@ -47,14 +61,16 @@ Deno.serve(async (req) => {
         await base44.asServiceRole.entities.Notification.create({
             user_email: user.email,
             title: 'Withdrawal Processed',
-            message: `$${amount.toFixed(2)} has been withdrawn from your wallet`,
+            message: `$${(netPayout / 100).toFixed(2)} withdrawn (2% fee: $${(platformFee / 100).toFixed(2)})`,
             type: 'deposit_confirmed'
         });
 
         return Response.json({ 
             success: true,
             message: 'Withdrawal processed successfully',
-            new_balance: (wallet.balance - cents) / 100
+            new_balance: (wallet.balance - totalDeducted) / 100,
+            net_payout: netPayout / 100,
+            platform_fee: platformFee / 100
         });
     } catch (error) {
         return Response.json({ error: error.message }, { status: 500 });

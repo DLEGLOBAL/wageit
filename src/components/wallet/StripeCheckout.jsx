@@ -14,6 +14,9 @@ export default function StripeCheckout({ onSuccess }) {
       return toast.error("Minimum deposit is $1");
     }
 
+    const platformFee = Number(amount) * 0.02;
+    const netAmount = Number(amount) - platformFee;
+
     setLoading(true);
     toast.loading("Processing payment...");
 
@@ -25,7 +28,7 @@ export default function StripeCheckout({ onSuccess }) {
       // Simulate successful payment (in production, use Stripe Elements)
       setTimeout(async () => {
         toast.dismiss();
-        toast.success("Payment successful!");
+        toast.success(`Payment successful! Net deposited: $${netAmount.toFixed(2)} (2% fee: $${platformFee.toFixed(2)})`);
         setLoading(false);
         setAmount("");
         if (onSuccess) onSuccess();
@@ -61,8 +64,24 @@ export default function StripeCheckout({ onSuccess }) {
           <span className="text-xs text-[var(--text-muted)]">Payment via Stripe</span>
         </div>
         <p className="text-[10px] text-[var(--text-muted)]">
-          Secure payment processing. Funds appear instantly in your wallet.
+          Secure payment processing. 2% platform fee applies.
         </p>
+        {amount && Number(amount) > 0 && (
+          <div className="text-[10px] text-[var(--text-muted)] pt-2 border-t border-[var(--border)]">
+            <div className="flex justify-between">
+              <span>Amount:</span>
+              <span>${Number(amount).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-orange-400">
+              <span>Platform Fee (2%):</span>
+              <span>-${(Number(amount) * 0.02).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between font-semibold text-white pt-1">
+              <span>You receive:</span>
+              <span>${(Number(amount) * 0.98).toFixed(2)}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       <Button

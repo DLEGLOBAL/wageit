@@ -149,7 +149,24 @@ export default function Wallet() {
                   onChange={e => setWithdrawAmount(e.target.value)}
                   className="bg-[var(--surface-2)] border-[var(--border)] text-white rounded-xl h-12"
                 />
-                <p className="text-xs text-[var(--text-muted)]">Available: ${balance}</p>
+                <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-xl p-3 text-xs">
+                  <div className="flex justify-between mb-1">
+                    <span className="text-[var(--text-muted)]">Available:</span>
+                    <span className="font-semibold">${balance}</span>
+                  </div>
+                  {withdrawAmount && Number(withdrawAmount) > 0 && (
+                    <>
+                      <div className="flex justify-between text-orange-400">
+                        <span>Platform Fee (2%):</span>
+                        <span>-${(Number(withdrawAmount) * 0.02).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between font-semibold text-white pt-1 border-t border-[var(--border)] mt-1">
+                        <span>You receive:</span>
+                        <span>${(Number(withdrawAmount) * 0.98).toFixed(2)}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
                 <Button
                   onClick={() => withdrawMutation.mutate(Number(withdrawAmount))}
                   disabled={!withdrawAmount || Number(withdrawAmount) < 1 || withdrawMutation.isPending}

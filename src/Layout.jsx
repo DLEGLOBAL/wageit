@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "./utils";
 import { base44 } from "@/api/base44Client";
-import { Home, PlusCircle, Wallet, Bell, User, Shield, Trophy } from "lucide-react";
+import { Home, PlusCircle, Wallet, Bell, User, Shield, Trophy, Settings } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 const NAV_ITEMS = [
@@ -15,6 +15,7 @@ const NAV_ITEMS = [
 
 const EXTENDED_NAV = [
   { icon: Trophy, label: "Ranks", page: "Leaderboard" },
+  { icon: Settings, label: "Settings", page: "Settings" },
 ];
 
 export default function Layout({ children, currentPageName }) {
@@ -100,7 +101,7 @@ export default function Layout({ children, currentPageName }) {
                 </Link>
               );
             })}
-            {isAdmin && (
+            {isAdmin ? (
               <Link
                 to={createPageUrl("AdminPanel")}
                 className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-200 ${
@@ -109,6 +110,16 @@ export default function Layout({ children, currentPageName }) {
               >
                 <Shield className="w-5 h-5" strokeWidth={currentPageName === "AdminPanel" ? 2.5 : 1.5} />
                 <span className="text-[10px] font-medium">Admin</span>
+              </Link>
+            ) : (
+              <Link
+                to={createPageUrl("Settings")}
+                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-200 ${
+                  currentPageName === "Settings" ? "text-[var(--accent)]" : "text-[var(--text-muted)] hover:text-white"
+                }`}
+              >
+                <Settings className="w-5 h-5" strokeWidth={currentPageName === "Settings" ? 2.5 : 1.5} />
+                <span className="text-[10px] font-medium">Settings</span>
               </Link>
             )}
           </div>
