@@ -36,7 +36,7 @@ export default function Layout({ children, currentPageName }) {
     refetchInterval: 15000,
   });
 
-  const hideNav = ["Terms", "WagerDetails"].includes(currentPageName);
+  const hideNav = ["Terms", "WagerDetails", "Landing"].includes(currentPageName);
   const isAdmin = user?.role === "admin";
 
   return (
