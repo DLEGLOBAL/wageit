@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "./utils";
 import { base44 } from "@/api/base44Client";
-import { Home, PlusCircle, Wallet, Bell, User, Shield } from "lucide-react";
+import { Home, PlusCircle, Wallet, Bell, User, Shield, Trophy } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 const NAV_ITEMS = [
@@ -11,6 +11,10 @@ const NAV_ITEMS = [
   { icon: Wallet, label: "Wallet", page: "Wallet" },
   { icon: Bell, label: "Alerts", page: "Notifications" },
   { icon: User, label: "Profile", page: "Profile" },
+];
+
+const EXTENDED_NAV = [
+  { icon: Trophy, label: "Ranks", page: "Leaderboard" },
 ];
 
 export default function Layout({ children, currentPageName }) {
@@ -55,6 +59,16 @@ export default function Layout({ children, currentPageName }) {
 
       <div className="flex-1 pb-20 overflow-auto scrollbar-hide">
         {children}
+        
+        {/* Powered by Roccstar.AI */}
+        <div className="text-center py-8 px-4">
+          <div className="inline-flex items-center gap-2 text-xs text-[var(--text-muted)]">
+            <span>Powered by</span>
+            <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">
+              Roccstar.AI
+            </span>
+          </div>
+        </div>
       </div>
 
       {!hideNav && (

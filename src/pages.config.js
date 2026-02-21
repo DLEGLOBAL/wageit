@@ -55,6 +55,7 @@ import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
 import AdminPanel from './pages/AdminPanel';
 import Terms from './pages/Terms';
+import Leaderboard from './pages/Leaderboard';
 import __Layout from './Layout.jsx';
 
 
@@ -67,6 +68,7 @@ export const PAGES = {
     "Profile": Profile,
     "AdminPanel": AdminPanel,
     "Terms": Terms,
+    "Leaderboard": Leaderboard,
 }
 
 export const pagesConfig = {

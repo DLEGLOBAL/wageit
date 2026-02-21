@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger
 } from "@/components/ui/dialog";
+import StripeCheckout from "../components/wallet/StripeCheckout";
 import {
   Wallet as WalletIcon, ArrowUpRight, ArrowDownLeft, Lock,
   TrendingUp, DollarSign, Loader2, ArrowUp, ArrowDown
@@ -62,10 +63,8 @@ export default function Wallet() {
 
   const withdrawMutation = useMutation({
     mutationFn: async (amount) => {
-      const cents = Math.round(amount * 100);
-      if (cents > wallet.balance) throw new Error("Insufficient funds");
-      await base44.entities.Wallet.update(wallet.id, { balance: wallet.balance - cents, total_withdrawn: (wallet.total_withdrawn || 0) + cents });
-      await base44.entities.Transaction.create({ user_email: user.email, type: "withdrawal", amount: cents, description: `Withdrawal $${amount}` });
+      const { data } = await base44.functions.invoke('stripeCreatePayout', { amount });
+      return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["wallet"] });
@@ -124,21 +123,11 @@ export default function Wallet() {
                 <DialogHeader>
                   <DialogTitle>Deposit Funds</DialogTitle>
                 </DialogHeader>
-                <Input
-                  type="number"
-                  min="1"
-                  placeholder="Amount ($)"
-                  value={depositAmount}
-                  onChange={e => setDepositAmount(e.target.value)}
-                  className="bg-[var(--surface-2)] border-[var(--border)] text-white rounded-xl h-12"
-                />
-                <Button
-                  onClick={() => depositMutation.mutate(Number(depositAmount))}
-                  disabled={!depositAmount || Number(depositAmount) < 1 || depositMutation.isPending}
-                  className="w-full h-12 bg-[var(--accent)] text-black hover:bg-[var(--accent-dim)] rounded-xl font-bold"
-                >
-                  {depositMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : "Confirm Deposit"}
-                </Button>
+                <StripeCheckout onSuccess={() => {
+                  setDepositOpen(false);
+                  qc.invalidateQueries({ queryKey: ["wallet"] });
+                  qc.invalidateQueries({ queryKey: ["transactions"] });
+                }} />
               </DialogContent>
             </Dialog>
 

@@ -5,15 +5,18 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlusCircle, Search, Flame, TrendingUp, Zap } from "lucide-react";
+import { PlusCircle, Search, Flame, TrendingUp, Zap, Sparkles, Lightbulb } from "lucide-react";
 import { motion } from "framer-motion";
 import WagerCard from "../components/wager/WagerCard";
 import EmptyState from "../components/common/EmptyState";
+import { toast } from "sonner";
 
 export default function Home() {
   const [user, setUser] = useState(null);
   const [tab, setTab] = useState("all");
   const [search, setSearch] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState([]);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -41,6 +44,15 @@ export default function Home() {
     return true;
   });
 
+  const getAISuggestions = async () => {
+    setShowSuggestions(true);
+    toast.loading("AI generating wager ideas...");
+    const { data } = await base44.functions.invoke('aiWagerSuggestions', {});
+    setAiSuggestions(data.suggestions || []);
+    toast.dismiss();
+    toast.success("Fresh ideas ready!");
+  };
+
   return (
     <div className="max-w-lg mx-auto">
       {/* Hero */}
@@ -57,6 +69,25 @@ export default function Home() {
           </p>
         </motion.div>
       </div>
+
+      {/* AI Suggestions CTA */}
+      {user && (
+        <div className="px-4 mb-4">
+          <button
+            onClick={getAISuggestions}
+            className="w-full bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/30 rounded-xl p-4 flex items-center gap-3 hover:border-purple-500/50 transition-all"
+          >
+            <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-purple-400" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-semibold text-white">AI Wager Ideas</p>
+              <p className="text-xs text-[var(--text-muted)]">Get personalized challenge suggestions</p>
+            </div>
+            <Lightbulb className="w-5 h-5 text-purple-400" />
+          </button>
+        </div>
+      )}
 
       {/* Search */}
       <div className="px-4 mb-4">
@@ -96,6 +127,32 @@ export default function Home() {
           ))}
         </div>
       </div>
+
+      {/* AI Suggestions Modal */}
+      {showSuggestions && aiSuggestions.length > 0 && (
+        <div className="px-4 mb-4">
+          <div className="bg-[var(--surface)] border border-purple-500/30 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-purple-400">AI Suggestions</h3>
+              <button onClick={() => setShowSuggestions(false)} className="text-xs text-[var(--text-muted)]">Close</button>
+            </div>
+            {aiSuggestions.map((s, i) => (
+              <div key={i} className="bg-[var(--surface-2)] border border-[var(--border)] rounded-xl p-3">
+                <p className="text-sm font-medium text-white mb-1">{s.title}</p>
+                <p className="text-xs text-[var(--text-muted)] mb-2">{s.description}</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-purple-400">${s.stake_amount}</span>
+                  <Link to={createPageUrl(`CreateWager`)}>
+                    <Button size="sm" className="bg-purple-500 hover:bg-purple-600 text-white text-xs rounded-lg h-7">
+                      Use This
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Wager Feed */}
       <div className="px-4 space-y-3 pb-6">

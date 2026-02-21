@@ -9,13 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import PageHeader from "../components/common/PageHeader";
-import { Zap, Trophy, Clock, DollarSign, Loader2 } from "lucide-react";
+import { Zap, Trophy, Clock, DollarSign, Loader2, Users, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 export default function CreateWager() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showMatchmaking, setShowMatchmaking] = useState(false);
+  const [matches, setMatches] = useState([]);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -32,6 +34,22 @@ export default function CreateWager() {
   }, []);
 
   const update = (key, val) => setForm(p => ({ ...p, [key]: val }));
+
+  const findMatches = async () => {
+    if (!form.title || !form.stake_amount) {
+      return toast.error("Add a title and stake amount first");
+    }
+    toast.loading("AI finding best opponents...");
+    const { data } = await base44.functions.invoke('aiMatchmaking', {
+      wager_title: form.title,
+      wager_type: form.wager_type,
+      stake_amount: Number(form.stake_amount) * 100
+    });
+    setMatches(data.matches || []);
+    setShowMatchmaking(true);
+    toast.dismiss();
+    toast.success("Opponents found!");
+  };
 
   const handleSubmit = async () => {
     if (!form.title.trim()) return toast.error("Title is required");
@@ -132,7 +150,16 @@ export default function CreateWager() {
 
         {/* Opponent */}
         <div className="space-y-2">
-          <Label className="text-sm text-[var(--text-muted)]">Opponent Email (optional)</Label>
+          <div className="flex items-center justify-between">
+            <Label className="text-sm text-[var(--text-muted)]">Opponent Email (optional)</Label>
+            <button
+              type="button"
+              onClick={findMatches}
+              className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1"
+            >
+              <Sparkles className="w-3 h-3" /> AI Match
+            </button>
+          </div>
           <Input
             type="email"
             placeholder="Leave empty for open challenge"
@@ -141,6 +168,43 @@ export default function CreateWager() {
             className="bg-[var(--surface)] border-[var(--border)] text-white rounded-xl h-12"
           />
         </div>
+
+        {/* AI Matchmaking Results */}
+        {showMatchmaking && matches.length > 0 && (
+          <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 space-y-2">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-purple-400">AI Suggested Opponents</p>
+              <button onClick={() => setShowMatchmaking(false)} className="text-[10px] text-[var(--text-muted)]">Close</button>
+            </div>
+            {matches.map((match, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  update("opponent_email", match.email);
+                  setShowMatchmaking(false);
+                  toast.success(`Matched with ${match.username}!`);
+                }}
+                className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg p-2 flex items-center gap-2 hover:border-purple-500/50 transition-all"
+              >
+                <div className="w-8 h-8 rounded-full bg-[var(--surface-2)] overflow-hidden">
+                  {match.avatar_url ? (
+                    <img src={match.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-xs font-bold">
+                      {(match.username || "?")[0].toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-xs font-medium">{match.username}</p>
+                  <p className="text-[10px] text-[var(--text-muted)]">{match.wins}W/{match.losses}L • {match.match_score}% match</p>
+                </div>
+                <Users className="w-3 h-3 text-purple-400" />
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Proof Type */}
         <div className="space-y-2">
