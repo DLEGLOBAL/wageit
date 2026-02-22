@@ -33,6 +33,13 @@ export default function CreateWager() {
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => navigate(createPageUrl("Home")));
+
+    // Check for pre-filled opponent from URL
+    const params = new URLSearchParams(window.location.search);
+    const opponentParam = params.get('opponent');
+    if (opponentParam) {
+      setForm(prev => ({ ...prev, opponent_email: opponentParam }));
+    }
   }, []);
 
   const update = (key, val) => setForm(p => ({ ...p, [key]: val }));
