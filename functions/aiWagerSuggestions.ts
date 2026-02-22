@@ -1,57 +1,55 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
-    try {
-        const base44 = createClientFromRequest(req);
-        const user = await base44.auth.me();
-        
-        if (!user) {
-            return Response.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+  try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-        const profile = await base44.entities.UserProfile.filter({ user_email: user.email });
-        const userWagers = await base44.entities.Wager.filter({ creator_email: user.email }, '-created_date', 10);
-        
-        const prompt = `Based on this user's wagering history, suggest 3 creative and engaging wager ideas they might enjoy:
+    // Get user profile and history
+    const profile = await base44.entities.UserProfile.filter({ user_email: user.email }).then(r => r[0]);
+    const userWagers = await base44.entities.Wager.filter({ creator_email: user.email }, '-created_date', 10);
+    const trendingWagers = await base44.entities.Wager.filter({ status: 'active' }, '-created_date', 20);
 
-User profile:
-- Wins: ${profile[0]?.wins || 0}
-- Losses: ${profile[0]?.losses || 0}
+    // Analyze user interests and platform trends
+    const { data } = await base44.integrations.Core.InvokeLLM({
+      prompt: `Generate 5 creative wager ideas based on:
+      
+User Profile:
+- Username: ${profile?.username || user.full_name}
+- Wins: ${profile?.wins || 0}, Losses: ${profile?.losses || 0}
 - Recent wagers: ${userWagers.map(w => w.title).join(', ') || 'None yet'}
 
-Generate 3 unique wager suggestions. For each, provide:
-1. A catchy title
-2. Clear description
-3. Wager type (skill_based, event_outcome, or time_challenge)
-4. Suggested stake amount ($10-$100)
-5. Proof type needed
+Platform Trends:
+- Popular wagers: ${trendingWagers.slice(0, 5).map(w => w.title).join(', ')}
 
-Make them diverse, exciting, and tailored to modern interests (fitness, gaming, cooking, sports, creative challenges, etc).`;
-
-        const response = await base44.integrations.Core.InvokeLLM({
-            prompt,
-            response_json_schema: {
-                type: "object",
-                properties: {
-                    suggestions: {
-                        type: "array",
-                        items: {
-                            type: "object",
-                            properties: {
-                                title: { type: "string" },
-                                description: { type: "string" },
-                                wager_type: { type: "string" },
-                                stake_amount: { type: "number" },
-                                proof_type: { type: "string" }
-                            }
-                        }
-                    }
-                }
+Create engaging, specific, and actionable wager ideas across different categories (fitness, skill, predictions, challenges, etc.).
+Each wager should be unique and appropriate for the platform.`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          suggestions: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                description: { type: "string" },
+                wager_type: { type: "string", enum: ["skill_based", "event_outcome", "time_challenge"] },
+                suggested_stake: { type: "number" },
+                category: { type: "string" }
+              }
             }
-        });
+          }
+        }
+      }
+    });
 
-        return Response.json({ suggestions: response.suggestions });
-    } catch (error) {
-        return Response.json({ error: error.message }, { status: 500 });
-    }
+    return Response.json({ suggestions: data.suggestions || [] });
+  } catch (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
 });
