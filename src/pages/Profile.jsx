@@ -5,6 +5,10 @@ import PageHeader from "../components/common/PageHeader";
 import StatCard from "../components/common/StatCard";
 import AchievementBadges from "../components/profile/AchievementBadges";
 import ReputationTier from "../components/gamification/ReputationTier";
+import StatsAnalytics from "../components/profile/StatsAnalytics";
+import FriendsList from "../components/social/FriendsList";
+import ActivityFeed from "../components/social/ActivityFeed";
+import InviteSystem from "../components/social/InviteSystem";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,6 +51,27 @@ export default function Profile() {
     queryFn: () => base44.entities.Achievement.filter({ user_email: user.email }),
     enabled: !!user?.email,
   });
+
+  const { data: friendships = [] } = useQuery({
+    queryKey: ["friendships-simple", user?.email],
+    queryFn: async () => {
+      const f1 = await base44.entities.Friendship.filter({ user1_email: user.email });
+      const f2 = await base44.entities.Friendship.filter({ user2_email: user.email });
+      return [...f1, ...f2];
+    },
+    enabled: !!user?.email,
+  });
+
+  const friendEmails = friendships.map(f => 
+    f.user1_email === user?.email ? f.user2_email : f.user1_email
+  );
+
+  const uploadBanner = async (file) => {
+    const { data } = await base44.integrations.Core.UploadFile({ file });
+    await base44.entities.UserProfile.update(profile.id, { banner_url: data.file_url });
+    queryClient.invalidateQueries({ queryKey: ["profile"] });
+    toast.success("Banner updated!");
+  };
 
   const updateProfile = useMutation({
     mutationFn: (data) => base44.entities.UserProfile.update(profile.id, data),
