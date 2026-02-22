@@ -3,7 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Users, UserPlus, Check, X, Swords, Loader2 } from "lucide-react";
+import { Users, UserPlus, Check, X, Swords, Loader2, MessageSquare } from "lucide-react";
+import StartChatButton from "./StartChatButton";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -206,15 +207,21 @@ export default function FriendsList({ userEmail }) {
                   </div>
                   <p className="text-xs text-[var(--text-muted)]">{friend.wins}W / {friend.losses}L</p>
                 </div>
-                <Link to={createPageUrl(`CreateWager?opponent=${friend.user_email}`)}>
-                  <Button
-                    size="sm"
-                    className="bg-[var(--accent)] text-black hover:bg-[var(--accent-dim)] rounded-lg"
-                  >
-                    <Swords className="w-4 h-4 mr-1" />
-                    Challenge
-                  </Button>
-                </Link>
+                <div className="flex gap-2">
+                  <StartChatButton 
+                    userEmail={userEmail} 
+                    friendEmail={friend.user_email}
+                    className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg h-8 w-8 p-0"
+                  />
+                  <Link to={createPageUrl(`CreateWager?opponent=${friend.user_email}`)}>
+                    <Button
+                      size="sm"
+                      className="bg-[var(--accent)] text-black hover:bg-[var(--accent-dim)] rounded-lg h-8"
+                    >
+                      <Swords className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </motion.div>
           ))}

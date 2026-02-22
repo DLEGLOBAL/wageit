@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "./utils";
 import { base44 } from "@/api/base44Client";
-import { Home, PlusCircle, Wallet, Bell, User, Shield, Trophy, Settings } from "lucide-react";
+import { Home, PlusCircle, Wallet, Bell, User, Shield, Trophy, Settings, MessageSquare } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import AchievementCelebration from "./components/gamification/AchievementCelebration";
 
@@ -18,6 +18,8 @@ const EXTENDED_NAV = [
   { icon: Trophy, label: "Ranks", page: "Leaderboard" },
   { icon: Settings, label: "Settings", page: "Settings" },
 ];
+
+const MESSAGES_NAV = { icon: MessageSquare, label: "Messages", page: "Messages" };
 
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();
@@ -52,7 +54,29 @@ export default function Layout({ children, currentPageName }) {
     refetchInterval: 15000,
   });
 
-  const hideNav = ["Terms", "WagerDetails", "Landing"].includes(currentPageName);
+  const { data: unreadMessages = 0 } = useQuery({
+    queryKey: ["unread-messages", user?.email],
+    queryFn: async () => {
+      if (!user?.email) return 0;
+      const rooms = await base44.entities.ChatRoom.filter({
+        participant_emails: { $in: [user.email] }
+      });
+      let total = 0;
+      for (const room of rooms) {
+        const unread = await base44.entities.Message.filter({
+          room_id: room.id,
+          sender_email: { $ne: user.email },
+          read_by: { $nin: [user.email] }
+        });
+        total += unread.length;
+      }
+      return total;
+    },
+    enabled: !!user?.email,
+    refetchInterval: 10000,
+  });
+
+  const hideNav = ["Terms", "WagerDetails", "Landing", "Chat"].includes(currentPageName);
   const isAdmin = user?.role === "admin";
 
   return (
@@ -132,13 +156,20 @@ export default function Layout({ children, currentPageName }) {
               </Link>
             ) : (
               <Link
-                to={createPageUrl("Settings")}
-                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-200 ${
-                  currentPageName === "Settings" ? "text-[var(--accent)]" : "text-[var(--text-muted)] hover:text-white"
+                to={createPageUrl("Messages")}
+                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-200 relative ${
+                  currentPageName === "Messages" ? "text-[var(--accent)]" : "text-[var(--text-muted)] hover:text-white"
                 }`}
               >
-                <Settings className="w-5 h-5" strokeWidth={currentPageName === "Settings" ? 2.5 : 1.5} />
-                <span className="text-[10px] font-medium">Settings</span>
+                <div className="relative">
+                  <MessageSquare className="w-5 h-5" strokeWidth={currentPageName === "Messages" ? 2.5 : 1.5} />
+                  {unreadMessages > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[var(--accent)] rounded-full text-[10px] font-bold flex items-center justify-center text-black">
+                      {unreadMessages > 9 ? "9+" : unreadMessages}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] font-medium">Chat</span>
               </Link>
             )}
           </div>

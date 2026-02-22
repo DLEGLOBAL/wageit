@@ -53,6 +53,29 @@ export default function WagerDetails() {
     return unsubscribe;
   }, [wagerId]);
 
+  // Create wager chat room if doesn't exist
+  useEffect(() => {
+    if (!wager || !user?.email) return;
+    if (!wager.creator_email || !wager.opponent_email) return;
+
+    const createWagerRoom = async () => {
+      const existing = await base44.entities.ChatRoom.filter({
+        room_type: "wager",
+        wager_id: wagerId
+      });
+      
+      if (existing.length === 0) {
+        await base44.entities.ChatRoom.create({
+          room_type: "wager",
+          wager_id: wagerId,
+          participant_emails: [wager.creator_email, wager.opponent_email]
+        });
+      }
+    };
+    
+    createWagerRoom();
+  }, [wager, user?.email, wagerId]);
+
   const updateWager = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Wager.update(id, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["wager", wagerId] }),
@@ -127,7 +150,31 @@ export default function WagerDetails() {
       <PageHeader 
         title="Wager Details" 
         backButton 
-        rightAction={<ShareButton title={wager?.title} />}
+        rightAction={
+          <div className="flex gap-2">
+            {isParticipant && wager?.opponent_email && (
+              <Link to={createPageUrl(`Chat?room=${wager.id}`)}>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="border-[var(--border)] text-white hover:bg-[var(--surface)] rounded-xl"
+                  onClick={async () => {
+                    const rooms = await base44.entities.ChatRoom.filter({
+                      room_type: "wager",
+                      wager_id: wagerId
+                    });
+                    if (rooms[0]) {
+                      window.location.href = createPageUrl(`Chat?room=${rooms[0].id}`);
+                    }
+                  }}
+                >
+                  <MessageSquare className="w-4 h-4" />
+                </Button>
+              </Link>
+            )}
+            <ShareButton title={wager?.title} />
+          </div>
+        }
       />
 
       <div className="px-4 py-6 space-y-5">

@@ -58,6 +58,8 @@ import Settings from './pages/Settings';
 import Terms from './pages/Terms';
 import WagerDetails from './pages/WagerDetails';
 import Wallet from './pages/Wallet';
+import Messages from './pages/Messages';
+import Chat from './pages/Chat';
 import __Layout from './Layout.jsx';
 
 
@@ -73,6 +75,8 @@ export const PAGES = {
     "Terms": Terms,
     "WagerDetails": WagerDetails,
     "Wallet": Wallet,
+    "Messages": Messages,
+    "Chat": Chat,
 }
 
 export const pagesConfig = {
