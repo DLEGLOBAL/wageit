@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import PageHeader from "../components/common/PageHeader";
 import StatCard from "../components/common/StatCard";
 import AchievementBadges from "../components/profile/AchievementBadges";
+import ReputationTier from "../components/gamification/ReputationTier";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -111,6 +112,15 @@ export default function Profile() {
             <span><strong className="text-white">{profile?.following?.length || 0}</strong> following</span>
           </div>
         </motion.div>
+
+        {/* Reputation Tier */}
+        {profile && (
+          <ReputationTier 
+            tier={profile.reputation_tier || 'bronze'} 
+            reputation={profile.reputation_score || 100}
+            showDetails={true}
+          />
+        )}
 
         {/* Achievements */}
         {achievements.length > 0 && (

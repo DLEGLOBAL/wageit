@@ -47,32 +47,32 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
-import Home from './pages/Home';
+import AdminPanel from './pages/AdminPanel';
 import CreateWager from './pages/CreateWager';
-import WagerDetails from './pages/WagerDetails';
-import Wallet from './pages/Wallet';
+import Home from './pages/Home';
+import Landing from './pages/Landing';
+import Leaderboard from './pages/Leaderboard';
 import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
-import AdminPanel from './pages/AdminPanel';
-import Terms from './pages/Terms';
-import Leaderboard from './pages/Leaderboard';
-import Landing from './pages/Landing';
 import Settings from './pages/Settings';
+import Terms from './pages/Terms';
+import WagerDetails from './pages/WagerDetails';
+import Wallet from './pages/Wallet';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "Home": Home,
+    "AdminPanel": AdminPanel,
     "CreateWager": CreateWager,
-    "WagerDetails": WagerDetails,
-    "Wallet": Wallet,
+    "Home": Home,
+    "Landing": Landing,
+    "Leaderboard": Leaderboard,
     "Notifications": Notifications,
     "Profile": Profile,
-    "AdminPanel": AdminPanel,
-    "Terms": Terms,
-    "Leaderboard": Leaderboard,
-    "Landing": Landing,
     "Settings": Settings,
+    "Terms": Terms,
+    "WagerDetails": WagerDetails,
+    "Wallet": Wallet,
 }
 
 export const pagesConfig = {

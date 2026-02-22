@@ -4,6 +4,7 @@ import { createPageUrl } from "./utils";
 import { base44 } from "@/api/base44Client";
 import { Home, PlusCircle, Wallet, Bell, User, Shield, Trophy, Settings } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import AchievementCelebration from "./components/gamification/AchievementCelebration";
 
 const NAV_ITEMS = [
   { icon: Home, label: "Home", page: "Home" },
@@ -21,10 +22,24 @@ const EXTENDED_NAV = [
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();
   const [user, setUser] = useState(null);
+  const [newAchievement, setNewAchievement] = useState(null);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!user?.email) return;
+    const unsubscribe = base44.entities.Notification.subscribe((event) => {
+      if (event.type === 'create' && event.data?.type === 'system' && event.data?.title?.includes('Achievement')) {
+        const achievementType = event.data?.message?.split('You earned: ')[1]?.toLowerCase().replace(/ /g, '_');
+        if (achievementType) {
+          setNewAchievement({ achievement_type: achievementType });
+        }
+      }
+    });
+    return unsubscribe;
+  }, [user?.email]);
 
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ["unread-notifs", user?.email],
@@ -42,6 +57,10 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white flex flex-col">
+      <AchievementCelebration 
+        achievement={newAchievement} 
+        onClose={() => setNewAchievement(null)} 
+      />
       <style>{`
         :root {
           --accent: #00ff87;
