@@ -12,12 +12,13 @@ import InviteSystem from "../components/social/InviteSystem";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger
 } from "@/components/ui/dialog";
 import {
-  Trophy, TrendingDown, Star, Zap, Settings, Shield,
-  LogOut, Camera, Loader2, BadgeCheck, Users
+  Trophy, TrendingDown, Star, Zap, Settings, Shield, DollarSign,
+  LogOut, Camera, Loader2, BadgeCheck, Users, BarChart3, Gift, Upload, Edit
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -69,7 +70,7 @@ export default function Profile() {
   const uploadBanner = async (file) => {
     const { data } = await base44.integrations.Core.UploadFile({ file });
     await base44.entities.UserProfile.update(profile.id, { banner_url: data.file_url });
-    queryClient.invalidateQueries({ queryKey: ["profile"] });
+    qc.invalidateQueries({ queryKey: ["profile"] });
     toast.success("Banner updated!");
   };
 
@@ -85,8 +86,8 @@ export default function Profile() {
   const handleAvatarUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    updateProfile.mutate({ avatar_url: file_url });
+    const { data } = await base44.integrations.Core.UploadFile({ file });
+    updateProfile.mutate({ avatar_url: data.file_url });
   };
 
   const openEdit = () => {
@@ -105,93 +106,135 @@ export default function Profile() {
         }
       />
 
-      <div className="px-4 py-6 space-y-5">
-        {/* Avatar & Info */}
+      <div className="px-4 py-6 space-y-6">
+        {/* Banner */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-center text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="relative -mx-4 -mt-6 mb-6"
         >
-          <div className="relative mb-4">
-            <div className="w-24 h-24 rounded-full bg-[var(--surface-2)] border-2 border-[var(--border)] overflow-hidden">
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-[var(--text-muted)]">
-                  {(profile?.username || "?")[0].toUpperCase()}
-                </div>
-              )}
-            </div>
-            <label className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-[var(--accent)] flex items-center justify-center cursor-pointer">
-              <Camera className="w-3.5 h-3.5 text-black" />
-              <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+          <div className="h-32 bg-gradient-to-r from-purple-500/20 to-blue-500/20 relative overflow-hidden">
+            {profile?.banner_url && (
+              <img src={profile.banner_url} alt="banner" className="w-full h-full object-cover" />
+            )}
+            <label className="absolute bottom-2 right-2 cursor-pointer">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => e.target.files[0] && uploadBanner(e.target.files[0])}
+              />
+              <div className="bg-black/50 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-1 text-xs text-white hover:bg-black/70 transition-colors">
+                <Upload className="w-3 h-3" /> Banner
+              </div>
             </label>
-          </div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold">{profile?.username || "Loading..."}</h2>
-            {profile?.is_verified && <BadgeCheck className="w-5 h-5 text-[var(--accent)]" />}
-          </div>
-          {profile?.bio && <p className="text-sm text-[var(--text-muted)] mt-1 max-w-xs">{profile.bio}</p>}
-          <div className="flex items-center gap-4 mt-3 text-sm text-[var(--text-muted)]">
-            <span><strong className="text-white">{profile?.followers?.length || 0}</strong> followers</span>
-            <span><strong className="text-white">{profile?.following?.length || 0}</strong> following</span>
           </div>
         </motion.div>
 
-        {/* Reputation Tier */}
-        {profile && (
-          <ReputationTier 
-            tier={profile.reputation_tier || 'bronze'} 
-            reputation={profile.reputation_score || 100}
-            showDetails={true}
-          />
-        )}
-
-        {/* Achievements */}
-        {achievements.length > 0 && (
-          <AchievementBadges achievements={achievements} />
-        )}
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard label="Wins" value={profile?.wins || 0} icon={Trophy} />
-          <StatCard label="Losses" value={profile?.losses || 0} icon={TrendingDown} color="text-red-400" />
-          <StatCard label="Rep Score" value={profile?.reputation_score || 100} icon={Star} color="text-yellow-400" />
-          <StatCard label="Completed" value={profile?.completed_wagers || 0} icon={Zap} color="text-blue-400" />
-        </div>
-
-        {/* Total Wagered */}
-        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 text-center">
-          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide mb-1">Total Wagered</p>
-          <p className="text-3xl font-black text-[var(--accent)]">
-            ${((profile?.total_wagered || 0) / 100).toFixed(2)}
-          </p>
-        </div>
-
-        {/* Verification */}
-        {!profile?.is_id_verified && (
-          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-purple-400" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium">Verify Your Identity</p>
-              <p className="text-xs text-[var(--text-muted)]">Get the verified badge and unlock higher limits</p>
-            </div>
-            <Button size="sm" className="bg-purple-500 hover:bg-purple-600 text-white rounded-xl text-xs">
-              Verify
-            </Button>
-          </div>
-        )}
-
-        {/* Logout */}
-        <Button
-          variant="outline"
-          onClick={() => base44.auth.logout()}
-          className="w-full h-12 border-[var(--border)] text-red-400 hover:bg-red-500/10 rounded-xl"
+        {/* Profile Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative -mt-16"
         >
-          <LogOut className="w-4 h-4 mr-2" /> Sign Out
-        </Button>
+          <div className="flex flex-col items-center text-center mb-6">
+            <div className="relative mb-4">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[var(--accent)] to-purple-500 p-1">
+                <div className="w-full h-full rounded-full bg-[var(--surface)] overflow-hidden">
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-2xl font-bold">
+                      {(user?.full_name || "?")[0].toUpperCase()}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <label className="absolute bottom-0 right-0 w-8 h-8 bg-[var(--accent)] rounded-full flex items-center justify-center cursor-pointer hover:bg-[var(--accent-dim)] transition-colors">
+                <Camera className="w-4 h-4 text-black" />
+                <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+              </label>
+            </div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-bold mb-1">{profile?.username || user?.full_name}</h2>
+              {profile?.is_verified && <BadgeCheck className="w-5 h-5 text-[var(--accent)]" />}
+            </div>
+            <p className="text-sm text-[var(--text-muted)] mb-3">{user?.email}</p>
+            {profile?.bio && (
+              <p className="text-sm text-[var(--text-muted)] max-w-sm">{profile.bio}</p>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Tabbed Content */}
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 bg-[var(--surface)] border border-[var(--border)] rounded-xl">
+            <TabsTrigger value="overview" className="text-xs rounded-lg data-[state=active]:bg-[var(--accent)] data-[state=active]:text-black">
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="stats" className="text-xs rounded-lg data-[state=active]:bg-[var(--accent)] data-[state=active]:text-black">
+              <BarChart3 className="w-3 h-3" />
+            </TabsTrigger>
+            <TabsTrigger value="social" className="text-xs rounded-lg data-[state=active]:bg-[var(--accent)] data-[state=active]:text-black">
+              <Users className="w-3 h-3" />
+            </TabsTrigger>
+            <TabsTrigger value="invite" className="text-xs rounded-lg data-[state=active]:bg-[var(--accent)] data-[state=active]:text-black">
+              <Gift className="w-3 h-3" />
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6 mt-6">
+            {profile && (
+              <ReputationTier 
+                tier={profile.reputation_tier || 'bronze'} 
+                reputation={profile.reputation_score || 100}
+                showDetails={true}
+              />
+            )}
+
+            {achievements.length > 0 && (
+              <AchievementBadges achievements={achievements} />
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <StatCard label="Wins" value={profile?.wins || 0} icon={Trophy} />
+              <StatCard label="Losses" value={profile?.losses || 0} />
+              <StatCard label="Friends" value={profile?.friends_count || 0} icon={Users} />
+              <StatCard label="Total Wagered" value={`$${((profile?.total_wagered || 0) / 100).toFixed(0)}`} icon={DollarSign} />
+            </div>
+
+            <Button
+              variant="outline"
+              onClick={() => base44.auth.logout()}
+              className="w-full h-12 border-[var(--border)] text-red-400 hover:bg-red-500/10 rounded-xl"
+            >
+              <LogOut className="w-4 h-4 mr-2" /> Sign Out
+            </Button>
+          </TabsContent>
+
+          {/* Stats Tab */}
+          <TabsContent value="stats" className="mt-6">
+            <StatsAnalytics userEmail={user?.email} />
+          </TabsContent>
+
+          {/* Social Tab */}
+          <TabsContent value="social" className="mt-6 space-y-6">
+            <FriendsList userEmail={user?.email} />
+            
+            <div>
+              <h3 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-3">
+                Friends Activity
+              </h3>
+              <ActivityFeed friendEmails={friendEmails} />
+            </div>
+          </TabsContent>
+
+          {/* Invite Tab */}
+          <TabsContent value="invite" className="mt-6">
+            <InviteSystem userEmail={user?.email} />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Edit Dialog */}
