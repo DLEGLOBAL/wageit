@@ -8,13 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import PageHeader from "../components/common/PageHeader";
-import WagerSuggestions from "../components/wager/WagerSuggestions";
-import WagerBuilderWizard from "../components/wager/WagerBuilderWizard";
-import RichTextEditor from "../components/wager/RichTextEditor";
-import { Zap, Trophy, Clock, DollarSign, Loader2, Users, Sparkles, Wand2 } from "lucide-react";
+import WagerBuilder from "../components/wager/WagerBuilder";
+import AISuggestions from "../components/wager/AISuggestions";
+import { Zap, Trophy, Clock, DollarSign, Loader2, Users, Sparkles, Image as ImageIcon, Wand2, Settings2 } from "lucide-react";
 import { toast } from "sonner";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 
 export default function CreateWager() {
   const navigate = useNavigate();
@@ -24,8 +25,12 @@ export default function CreateWager() {
   const [matches, setMatches] = useState([]);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [coverImage, setCoverImage] = useState("");
-  const [creationMode, setCreationMode] = useState("quick");
-  const [useRichText, setUseRichText] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(true);
+  const [suggestions, setSuggestions] = useState([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [showBuilder, setShowBuilder] = useState(false);
+  const [customRules, setCustomRules] = useState(null);
+  const [useVisualEditor, setUseVisualEditor] = useState(false);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -35,7 +40,6 @@ export default function CreateWager() {
     proof_type: "any",
     privacy: "public",
     expires_days: "7",
-    custom_rules: [],
   });
 
   useEffect(() => {
@@ -47,20 +51,23 @@ export default function CreateWager() {
     if (opponentParam) {
       setForm(prev => ({ ...prev, opponent_email: opponentParam }));
     }
+    
+    // Load AI suggestions
+    loadSuggestions();
   }, []);
 
-  const update = (key, val) => setForm(p => ({ ...p, [key]: val }));
-
-  const handleSuggestionSelect = (suggestion) => {
-    setForm({
-      ...form,
-      title: suggestion.title,
-      description: suggestion.description,
-      wager_type: suggestion.wager_type,
-      stake_amount: suggestion.suggested_stake,
-    });
-    toast.success("Wager template applied!");
+  const loadSuggestions = async () => {
+    setLoadingSuggestions(true);
+    try {
+      const { data } = await base44.functions.invoke('aiWagerSuggestions', {});
+      setSuggestions(data.suggestions || []);
+    } catch (err) {
+      console.error("Failed to load suggestions:", err);
+    }
+    setLoadingSuggestions(false);
   };
+
+  const update = (key, val) => setForm(p => ({ ...p, [key]: val }));
 
   const findMatches = async () => {
     if (!form.title || !form.stake_amount) {
@@ -95,6 +102,18 @@ export default function CreateWager() {
     toast.success("Cover image generated!");
   };
 
+  const applySuggestion = (suggestion) => {
+    setForm(prev => ({
+      ...prev,
+      title: suggestion.title,
+      description: suggestion.description,
+      wager_type: suggestion.wager_type,
+      stake_amount: suggestion.suggested_stake.toString()
+    }));
+    setShowSuggestions(false);
+    toast.success("Applied AI suggestion!");
+  };
+
   const handleSubmit = async () => {
     if (!form.title.trim()) return toast.error("Title is required");
     if (!form.stake_amount || Number(form.stake_amount) < 1) return toast.error("Minimum stake is $1");
@@ -103,7 +122,7 @@ export default function CreateWager() {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + Number(form.expires_days || 7));
 
-    const wager = await base44.entities.Wager.create({
+    const wagerData = {
       title: form.title.trim(),
       description: form.description.trim(),
       wager_type: form.wager_type,
@@ -115,7 +134,14 @@ export default function CreateWager() {
       privacy: form.privacy,
       expires_at: expiresAt.toISOString(),
       status: form.opponent_email.trim() ? "pending_funding" : "open",
-    });
+    };
+
+    // Add custom rules if they exist
+    if (customRules) {
+      wagerData.description += `\n\n**Custom Rules:**\n${JSON.stringify(customRules, null, 2)}`;
+    }
+
+    const wager = await base44.entities.Wager.create(wagerData);
 
     toast.success("Wager created!");
     navigate(createPageUrl(`WagerDetails?id=${wager.id}`));
@@ -133,27 +159,25 @@ export default function CreateWager() {
 
       <div className="px-4 py-6 space-y-6">
         {/* AI Suggestions */}
-        <WagerSuggestions onSelect={handleSuggestionSelect} />
-
-        {/* Mode Tabs */}
-        <Tabs value={creationMode} onValueChange={setCreationMode} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-[var(--surface)] border border-[var(--border)] rounded-xl">
-            <TabsTrigger 
-              value="quick" 
-              className="text-xs rounded-lg data-[state=active]:bg-[var(--accent)] data-[state=active]:text-black"
-            >
-              Quick Create
-            </TabsTrigger>
-            <TabsTrigger 
-              value="wizard" 
-              className="text-xs rounded-lg data-[state=active]:bg-[var(--accent)] data-[state=active]:text-black flex items-center gap-1"
-            >
-              <Wand2 className="w-3 h-3" /> Guided
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Quick Mode */}
-          <TabsContent value="quick" className="space-y-6 mt-6">
+        {showSuggestions && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold">Quick Start</h3>
+              <button
+                onClick={() => setShowSuggestions(false)}
+                className="text-xs text-[var(--text-muted)] hover:text-white"
+              >
+                Skip
+              </button>
+            </div>
+            <AISuggestions
+              suggestions={suggestions}
+              onSelect={applySuggestion}
+              loading={loadingSuggestions}
+            />
+            <div className="h-px bg-[var(--border)] my-6" />
+          </div>
+        )}
         {/* Title */}
         <div className="space-y-2">
           <Label className="text-sm text-[var(--text-muted)]">Wager Title</Label>
@@ -169,13 +193,13 @@ export default function CreateWager() {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label className="text-sm text-[var(--text-muted)]">Description</Label>
-            <div className="flex items-center gap-2">
+            <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setUseRichText(!useRichText)}
-                className="text-xs text-blue-400 hover:text-blue-300"
+                onClick={() => setUseVisualEditor(!useVisualEditor)}
+                className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
               >
-                {useRichText ? "Plain" : "Rich"} Text
+                <Wand2 className="w-3 h-3" /> {useVisualEditor ? "Plain" : "Rich"}
               </button>
               <button
                 type="button"
@@ -187,12 +211,32 @@ export default function CreateWager() {
               </button>
             </div>
           </div>
-          {useRichText ? (
-            <RichTextEditor
-              value={form.description}
-              onChange={val => update("description", val)}
-              placeholder="Describe the terms of your wager..."
-            />
+          {useVisualEditor ? (
+            <div className="rounded-xl overflow-hidden border border-[var(--border)]">
+              <ReactQuill
+                value={form.description}
+                onChange={(value) => update("description", value)}
+                theme="snow"
+                placeholder="Describe the terms of your wager..."
+                className="bg-[var(--surface)] text-white"
+                modules={{
+                  toolbar: [
+                    ['bold', 'italic', 'underline'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link']
+                  ]
+                }}
+              />
+              <style>{`
+                .ql-toolbar { background: var(--surface-2); border: none; border-bottom: 1px solid var(--border); }
+                .ql-container { background: var(--surface); border: none; min-height: 100px; }
+                .ql-editor { color: white; }
+                .ql-editor.ql-blank::before { color: var(--text-muted); }
+                .ql-stroke { stroke: var(--text-muted); }
+                .ql-fill { fill: var(--text-muted); }
+                .ql-picker-label { color: var(--text-muted); }
+              `}</style>
+            </div>
           ) : (
             <Textarea
               placeholder="Describe the terms of your wager..."
@@ -358,6 +402,32 @@ export default function CreateWager() {
           />
         </div>
 
+        {/* Advanced Builder */}
+        <Dialog open={showBuilder} onOpenChange={setShowBuilder}>
+          <DialogTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-full border-dashed border-[var(--accent)]/30 text-[var(--accent)] hover:bg-[var(--accent)]/10 rounded-xl h-12"
+            >
+              <Settings2 className="w-4 h-4 mr-2" />
+              Add Custom Rules & Conditions
+              {customRules && <span className="ml-2 text-xs">(Applied)</span>}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-[var(--surface)] border-[var(--border)] text-white max-w-md">
+            <DialogHeader>
+              <DialogTitle>Wager Builder</DialogTitle>
+            </DialogHeader>
+            <WagerBuilder
+              onComplete={(rules) => {
+                setCustomRules(rules);
+                setShowBuilder(false);
+                toast.success("Custom rules applied!");
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+
         {/* Submit */}
         <Button
           onClick={handleSubmit}
@@ -366,18 +436,6 @@ export default function CreateWager() {
         >
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Wager"}
         </Button>
-          </TabsContent>
-
-          {/* Wizard Mode */}
-          <TabsContent value="wizard" className="mt-6">
-            <WagerBuilderWizard
-              form={form}
-              onUpdate={update}
-              onComplete={() => setCreationMode("quick")}
-              onCancel={() => setCreationMode("quick")}
-            />
-          </TabsContent>
-        </Tabs>
       </div>
     </div>
   );
