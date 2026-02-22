@@ -8,8 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import PageHeader from "../components/common/PageHeader";
-import { Zap, Trophy, Clock, DollarSign, Loader2, Users, Sparkles, Image as ImageIcon } from "lucide-react";
+import WagerSuggestions from "../components/wager/WagerSuggestions";
+import WagerBuilderWizard from "../components/wager/WagerBuilderWizard";
+import RichTextEditor from "../components/wager/RichTextEditor";
+import { Zap, Trophy, Clock, DollarSign, Loader2, Users, Sparkles, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function CreateWager() {
@@ -20,6 +24,8 @@ export default function CreateWager() {
   const [matches, setMatches] = useState([]);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [coverImage, setCoverImage] = useState("");
+  const [creationMode, setCreationMode] = useState("quick");
+  const [useRichText, setUseRichText] = useState(false);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -29,6 +35,7 @@ export default function CreateWager() {
     proof_type: "any",
     privacy: "public",
     expires_days: "7",
+    custom_rules: [],
   });
 
   useEffect(() => {
@@ -43,6 +50,17 @@ export default function CreateWager() {
   }, []);
 
   const update = (key, val) => setForm(p => ({ ...p, [key]: val }));
+
+  const handleSuggestionSelect = (suggestion) => {
+    setForm({
+      ...form,
+      title: suggestion.title,
+      description: suggestion.description,
+      wager_type: suggestion.wager_type,
+      stake_amount: suggestion.suggested_stake,
+    });
+    toast.success("Wager template applied!");
+  };
 
   const findMatches = async () => {
     if (!form.title || !form.stake_amount) {
@@ -114,6 +132,28 @@ export default function CreateWager() {
       <PageHeader title="Create Wager" subtitle="Set up your challenge" backButton />
 
       <div className="px-4 py-6 space-y-6">
+        {/* AI Suggestions */}
+        <WagerSuggestions onSelect={handleSuggestionSelect} />
+
+        {/* Mode Tabs */}
+        <Tabs value={creationMode} onValueChange={setCreationMode} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 bg-[var(--surface)] border border-[var(--border)] rounded-xl">
+            <TabsTrigger 
+              value="quick" 
+              className="text-xs rounded-lg data-[state=active]:bg-[var(--accent)] data-[state=active]:text-black"
+            >
+              Quick Create
+            </TabsTrigger>
+            <TabsTrigger 
+              value="wizard" 
+              className="text-xs rounded-lg data-[state=active]:bg-[var(--accent)] data-[state=active]:text-black flex items-center gap-1"
+            >
+              <Wand2 className="w-3 h-3" /> Guided
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Quick Mode */}
+          <TabsContent value="quick" className="space-y-6 mt-6">
         {/* Title */}
         <div className="space-y-2">
           <Label className="text-sm text-[var(--text-muted)]">Wager Title</Label>
@@ -129,21 +169,38 @@ export default function CreateWager() {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label className="text-sm text-[var(--text-muted)]">Description</Label>
-            <button
-              type="button"
-              onClick={generateCoverImage}
-              disabled={generatingImage}
-              className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1"
-            >
-              <Sparkles className="w-3 h-3" /> AI Cover
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setUseRichText(!useRichText)}
+                className="text-xs text-blue-400 hover:text-blue-300"
+              >
+                {useRichText ? "Plain" : "Rich"} Text
+              </button>
+              <button
+                type="button"
+                onClick={generateCoverImage}
+                disabled={generatingImage}
+                className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1"
+              >
+                <Sparkles className="w-3 h-3" /> AI Cover
+              </button>
+            </div>
           </div>
-          <Textarea
-            placeholder="Describe the terms of your wager..."
-            value={form.description}
-            onChange={e => update("description", e.target.value)}
-            className="bg-[var(--surface)] border-[var(--border)] text-white rounded-xl min-h-[100px]"
-          />
+          {useRichText ? (
+            <RichTextEditor
+              value={form.description}
+              onChange={val => update("description", val)}
+              placeholder="Describe the terms of your wager..."
+            />
+          ) : (
+            <Textarea
+              placeholder="Describe the terms of your wager..."
+              value={form.description}
+              onChange={e => update("description", e.target.value)}
+              className="bg-[var(--surface)] border-[var(--border)] text-white rounded-xl min-h-[100px]"
+            />
+          )}
         </div>
 
         {/* Cover Image Preview */}
@@ -309,6 +366,18 @@ export default function CreateWager() {
         >
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Wager"}
         </Button>
+          </TabsContent>
+
+          {/* Wizard Mode */}
+          <TabsContent value="wizard" className="mt-6">
+            <WagerBuilderWizard
+              form={form}
+              onUpdate={update}
+              onComplete={() => setCreationMode("quick")}
+              onCancel={() => setCreationMode("quick")}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
