@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlusCircle, Search, Flame, TrendingUp, Zap, Sparkles, Lightbulb, SlidersHorizontal } from "lucide-react";
+import { PlusCircle, Search, Flame, TrendingUp, Zap, Sparkles, Lightbulb, SlidersHorizontal, Compass } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +15,7 @@ import {
 import { motion } from "framer-motion";
 import WagerCard from "../components/wager/WagerCard";
 import EmptyState from "../components/common/EmptyState";
+import AdvancedFilters from "../components/wager/AdvancedFilters";
 import { toast } from "sonner";
 import PullToRefresh from "react-simple-pull-to-refresh";
 
@@ -26,6 +27,14 @@ export default function Home() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState([]);
   const [sortBy, setSortBy] = useState("-created_date");
+  const [filters, setFilters] = useState({
+    wagerTypes: [],
+    minStake: 0,
+    maxStake: 10000,
+    expiringSoon: false,
+    keywords: ""
+  });
+  const [discoverCategories, setDiscoverCategories] = useState([]);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -61,6 +70,17 @@ export default function Home() {
     if (search && !w.title?.toLowerCase().includes(search.toLowerCase())) return false;
     if (tab === "featured") return w.is_featured;
     if (tab === "open") return w.status === "open";
+    
+    // Advanced filters
+    if (filters.wagerTypes.length > 0 && !filters.wagerTypes.includes(w.wager_type)) return false;
+    const stakeInDollars = (w.stake_amount || 0) / 100;
+    if (stakeInDollars < filters.minStake || stakeInDollars > filters.maxStake) return false;
+    if (filters.expiringSoon) {
+      const hoursUntilExpiry = (new Date(w.expires_at) - new Date()) / (1000 * 60 * 60);
+      if (hoursUntilExpiry > 24) return false;
+    }
+    if (filters.keywords && !w.description?.toLowerCase().includes(filters.keywords.toLowerCase())) return false;
+    
     return true;
   });
 
@@ -75,6 +95,19 @@ export default function Home() {
 
   const handleRefresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ["wagers"] });
+  };
+
+  const loadDiscoverCategories = async () => {
+    try {
+      toast.loading("Loading curated wagers...");
+      const { data } = await base44.functions.invoke('aiDiscoverWagers', {});
+      setDiscoverCategories(data.categories || []);
+      toast.dismiss();
+      toast.success("Discover updated!");
+    } catch (err) {
+      toast.dismiss();
+      toast.error("Failed to load discover");
+    }
   };
 
   return (
@@ -113,7 +146,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Search & Sort */}
+      {/* Search & Filters */}
       <div className="px-4 mb-4">
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -123,26 +156,27 @@ export default function Home() {
               placeholder="Search wagers..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)]/50 transition-colors"
+              className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl pl-10 pr-4 py-3 text-sm placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)]/50 transition-colors"
             />
           </div>
+          <AdvancedFilters filters={filters} onApply={setFilters} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="border-[var(--border)] text-white hover:bg-[var(--surface)] rounded-xl px-4">
+              <Button variant="outline" className="border-[var(--border)] hover:bg-[var(--surface)] rounded-xl px-4">
                 <SlidersHorizontal className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-[var(--surface)] border-[var(--border)]">
-              <DropdownMenuItem onClick={() => setSortBy("-created_date")} className="text-white cursor-pointer">
+              <DropdownMenuItem onClick={() => setSortBy("-created_date")} className="cursor-pointer">
                 Newest First
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("created_date")} className="text-white cursor-pointer">
+              <DropdownMenuItem onClick={() => setSortBy("created_date")} className="cursor-pointer">
                 Oldest First
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("-stake_amount")} className="text-white cursor-pointer">
+              <DropdownMenuItem onClick={() => setSortBy("-stake_amount")} className="cursor-pointer">
                 Highest Stake
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("stake_amount")} className="text-white cursor-pointer">
+              <DropdownMenuItem onClick={() => setSortBy("stake_amount")} className="cursor-pointer">
                 Lowest Stake
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -157,15 +191,21 @@ export default function Home() {
             { value: "all", label: "All", icon: TrendingUp },
             { value: "open", label: "Open", icon: Zap },
             { value: "featured", label: "Featured", icon: Flame },
+            { value: "discover", label: "Discover", icon: Compass },
             { value: "my", label: "My Wagers", icon: null },
           ].map(t => (
             <button
               key={t.value}
-              onClick={() => setTab(t.value)}
+              onClick={() => {
+                setTab(t.value);
+                if (t.value === "discover" && discoverCategories.length === 0) {
+                  loadDiscoverCategories();
+                }
+              }}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                 tab === t.value
                   ? "bg-[var(--accent)] text-black"
-                  : "bg-[var(--surface)] text-[var(--text-muted)] hover:text-white"
+                  : "bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
               }`}
             >
               {t.icon && <t.icon className="w-3.5 h-3.5" />}
@@ -201,49 +241,73 @@ export default function Home() {
         </div>
       )}
 
-      {/* Wager Feed with Pull to Refresh */}
-      <PullToRefresh
-        onRefresh={handleRefresh}
-        pullingContent=""
-        refreshingContent={
-          <div className="flex justify-center py-4">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            >
-              <Zap className="w-6 h-6 text-[var(--accent)]" />
-            </motion.div>
-          </div>
-        }
-        pullDownThreshold={80}
-        maxPullDownDistance={100}
-        resistance={2}
-      >
-        <div className="px-4 space-y-3 pb-6">
-          {isLoading ? (
-            Array(3).fill(0).map((_, i) => (
-              <div key={i} className="bg-[var(--surface)] rounded-2xl h-32 animate-pulse" />
-            ))
-          ) : filtered.length > 0 ? (
-            filtered.map((wager, i) => (
-              <WagerCard key={wager.id} wager={wager} index={i} />
-            ))
-          ) : (
-            <EmptyState
-              icon={Zap}
-              title="No wagers yet"
-              description="Be the first to create a challenge"
-              action={
-                <Link to={createPageUrl("CreateWager")}>
-                  <Button className="bg-[var(--accent)] text-black hover:bg-[var(--accent-dim)] rounded-xl">
-                    <PlusCircle className="w-4 h-4 mr-2" /> Create Wager
-                  </Button>
-                </Link>
-              }
-            />
-          )}
+      {/* Discover Tab Content */}
+      {tab === "discover" && discoverCategories.length > 0 && (
+        <div className="px-4 mb-6 space-y-6">
+          {discoverCategories.map((category, idx) => (
+            <div key={idx}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xl">{category.icon}</span>
+                <div>
+                  <h3 className="text-sm font-bold">{category.name}</h3>
+                  <p className="text-xs text-[var(--text-muted)]">{category.description}</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {category.wagers?.map(wager => (
+                  <WagerCard key={wager.id} wager={wager} />
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
-      </PullToRefresh>
+      )}
+
+      {/* Wager Feed with Pull to Refresh */}
+      {tab !== "discover" && (
+        <PullToRefresh
+          onRefresh={handleRefresh}
+          pullingContent=""
+          refreshingContent={
+            <div className="flex justify-center py-4">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              >
+                <Zap className="w-6 h-6 text-[var(--accent)]" />
+              </motion.div>
+            </div>
+          }
+          pullDownThreshold={80}
+          maxPullDownDistance={100}
+          resistance={2}
+        >
+          <div className="px-4 space-y-3 pb-6">
+            {isLoading ? (
+              Array(3).fill(0).map((_, i) => (
+                <div key={i} className="bg-[var(--surface)] rounded-2xl h-32 animate-pulse" />
+              ))
+            ) : filtered.length > 0 ? (
+              filtered.map((wager, i) => (
+                <WagerCard key={wager.id} wager={wager} index={i} />
+              ))
+            ) : (
+              <EmptyState
+                icon={Zap}
+                title="No wagers yet"
+                description="Be the first to create a challenge"
+                action={
+                  <Link to={createPageUrl("CreateWager")}>
+                    <Button className="bg-[var(--accent)] text-black hover:bg-[var(--accent-dim)] rounded-xl">
+                      <PlusCircle className="w-4 h-4 mr-2" /> Create Wager
+                    </Button>
+                  </Link>
+                }
+              />
+            )}
+          </div>
+        </PullToRefresh>
+      )}
     </div>
   );
 }
