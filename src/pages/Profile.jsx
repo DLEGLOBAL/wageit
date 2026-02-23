@@ -18,10 +18,11 @@ import {
 } from "@/components/ui/dialog";
 import {
   Trophy, TrendingDown, Star, Zap, Settings, Shield, DollarSign,
-  LogOut, Camera, Loader2, BadgeCheck, Users, BarChart3, Gift, Upload, Edit
+  LogOut, Camera, Loader2, BadgeCheck, Users, BarChart3, Gift, Upload, Edit, Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import RewardsShop from "../components/gamification/RewardsShop";
 
 export default function Profile() {
   const [user, setUser] = useState(null);
@@ -59,6 +60,15 @@ export default function Profile() {
       const f1 = await base44.entities.Friendship.filter({ user1_email: user.email });
       const f2 = await base44.entities.Friendship.filter({ user2_email: user.email });
       return [...f1, ...f2];
+    },
+    enabled: !!user?.email,
+  });
+
+  const { data: points = { points: 0 } } = useQuery({
+    queryKey: ["points", user?.email],
+    queryFn: async () => {
+      const p = await base44.entities.Points.filter({ user_email: user.email });
+      return p[0] || { points: 0, total_earned: 0 };
     },
     enabled: !!user?.email,
   });
@@ -166,11 +176,24 @@ export default function Profile() {
           </div>
         </motion.div>
 
+        {/* Points Banner */}
+        <div className="bg-gradient-to-r from-[var(--accent)]/10 to-purple-500/10 border border-[var(--accent)]/30 rounded-2xl p-4 flex items-center justify-between">
+          <div>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Points Balance</p>
+            <p className="text-2xl font-bold text-[var(--accent)]">{points.points || 0}</p>
+            <p className="text-xs text-[var(--text-muted)]">Total Earned: {points.total_earned || 0}</p>
+          </div>
+          <Sparkles className="w-10 h-10 text-[var(--accent)]" />
+        </div>
+
         {/* Tabbed Content */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-[var(--surface)] border border-[var(--border)] rounded-xl">
+          <TabsList className="grid w-full grid-cols-5 bg-[var(--surface)] border border-[var(--border)] rounded-xl">
             <TabsTrigger value="overview" className="text-xs rounded-lg data-[state=active]:bg-[var(--accent)] data-[state=active]:text-black">
               Overview
+            </TabsTrigger>
+            <TabsTrigger value="rewards" className="text-xs rounded-lg data-[state=active]:bg-[var(--accent)] data-[state=active]:text-black">
+              <Sparkles className="w-3 h-3" />
             </TabsTrigger>
             <TabsTrigger value="stats" className="text-xs rounded-lg data-[state=active]:bg-[var(--accent)] data-[state=active]:text-black">
               <BarChart3 className="w-3 h-3" />
@@ -211,6 +234,11 @@ export default function Profile() {
             >
               <LogOut className="w-4 h-4 mr-2" /> Sign Out
             </Button>
+          </TabsContent>
+
+          {/* Rewards Shop Tab */}
+          <TabsContent value="rewards" className="mt-6">
+            <RewardsShop user={user} />
           </TabsContent>
 
           {/* Stats Tab */}
