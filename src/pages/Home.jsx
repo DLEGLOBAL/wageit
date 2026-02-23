@@ -16,6 +16,7 @@ import { motion } from "framer-motion";
 import WagerCard from "../components/wager/WagerCard";
 import EmptyState from "../components/common/EmptyState";
 import { toast } from "sonner";
+import PullToRefresh from "react-simple-pull-to-refresh";
 
 export default function Home() {
   const queryClient = useQueryClient();
@@ -70,6 +71,10 @@ export default function Home() {
     setAiSuggestions(data.suggestions || []);
     toast.dismiss();
     toast.success("Fresh ideas ready!");
+  };
+
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["wagers"] });
   };
 
   return (
@@ -196,31 +201,49 @@ export default function Home() {
         </div>
       )}
 
-      {/* Wager Feed */}
-      <div className="px-4 space-y-3 pb-6">
-        {isLoading ? (
-          Array(3).fill(0).map((_, i) => (
-            <div key={i} className="bg-[var(--surface)] rounded-2xl h-32 animate-pulse" />
-          ))
-        ) : filtered.length > 0 ? (
-          filtered.map((wager, i) => (
-            <WagerCard key={wager.id} wager={wager} index={i} />
-          ))
-        ) : (
-          <EmptyState
-            icon={Zap}
-            title="No wagers yet"
-            description="Be the first to create a challenge"
-            action={
-              <Link to={createPageUrl("CreateWager")}>
-                <Button className="bg-[var(--accent)] text-black hover:bg-[var(--accent-dim)] rounded-xl">
-                  <PlusCircle className="w-4 h-4 mr-2" /> Create Wager
-                </Button>
-              </Link>
-            }
-          />
-        )}
-      </div>
+      {/* Wager Feed with Pull to Refresh */}
+      <PullToRefresh
+        onRefresh={handleRefresh}
+        pullingContent=""
+        refreshingContent={
+          <div className="flex justify-center py-4">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            >
+              <Zap className="w-6 h-6 text-[var(--accent)]" />
+            </motion.div>
+          </div>
+        }
+        pullDownThreshold={80}
+        maxPullDownDistance={100}
+        resistance={2}
+      >
+        <div className="px-4 space-y-3 pb-6">
+          {isLoading ? (
+            Array(3).fill(0).map((_, i) => (
+              <div key={i} className="bg-[var(--surface)] rounded-2xl h-32 animate-pulse" />
+            ))
+          ) : filtered.length > 0 ? (
+            filtered.map((wager, i) => (
+              <WagerCard key={wager.id} wager={wager} index={i} />
+            ))
+          ) : (
+            <EmptyState
+              icon={Zap}
+              title="No wagers yet"
+              description="Be the first to create a challenge"
+              action={
+                <Link to={createPageUrl("CreateWager")}>
+                  <Button className="bg-[var(--accent)] text-black hover:bg-[var(--accent-dim)] rounded-xl">
+                    <PlusCircle className="w-4 h-4 mr-2" /> Create Wager
+                  </Button>
+                </Link>
+              }
+            />
+          )}
+        </div>
+      </PullToRefresh>
     </div>
   );
 }
