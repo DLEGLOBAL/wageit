@@ -5,6 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { Home, PlusCircle, Wallet, Bell, User, Shield, Trophy, Settings, MessageSquare } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import AchievementCelebration from "./components/gamification/AchievementCelebration";
+import PageTransition from "./components/common/PageTransition";
 
 const NAV_ITEMS = [
   { icon: Home, label: "Home", page: "Home" },
@@ -94,15 +95,28 @@ export default function Layout({ children, currentPageName }) {
           --surface-3: #22222e;
           --border: #2a2a38;
           --text-muted: #6b6b80;
+          --safe-area-top: env(safe-area-inset-top, 0px);
+          --safe-area-bottom: env(safe-area-inset-bottom, 0px);
         }
-        body { background: #0a0a0f; }
+        body { 
+          background: #0a0a0f;
+          overscroll-behavior: none;
+          -webkit-user-select: none;
+          user-select: none;
+        }
+        input, textarea {
+          -webkit-user-select: text;
+          user-select: text;
+        }
         * { -webkit-tap-highlight-color: transparent; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
       <div className="flex-1 pb-20 overflow-auto scrollbar-hide">
-        {children}
+        <PageTransition>
+          {children}
+        </PageTransition>
         
         {/* Powered by Roccstar.AI */}
         <div className="text-center py-8 px-4">
@@ -116,8 +130,8 @@ export default function Layout({ children, currentPageName }) {
       </div>
 
       {!hideNav && (
-        <nav className="fixed bottom-0 left-0 right-0 bg-[#0a0a0f]/95 backdrop-blur-xl border-t border-[var(--border)] z-50">
-          <div className="max-w-lg mx-auto flex items-center justify-around px-2 py-2">
+        <nav className="fixed bottom-0 left-0 right-0 bg-[#0a0a0f]/95 backdrop-blur-xl border-t border-[var(--border)] z-50" style={{ paddingBottom: 'var(--safe-area-bottom)' }}>
+          <div className="max-w-lg mx-auto flex items-center justify-around px-2 py-2" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
             {NAV_ITEMS.map(({ icon: Icon, label, page }) => {
               const isActive = currentPageName === page;
               const isBell = page === "Notifications";

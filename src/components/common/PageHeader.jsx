@@ -6,7 +6,7 @@ export default function PageHeader({ title, subtitle, backButton, rightAction })
   const navigate = useNavigate();
 
   return (
-    <div className="sticky top-0 z-40 bg-[#0a0a0f]/90 backdrop-blur-xl border-b border-[var(--border)] px-4 py-4">
+    <div className="sticky top-0 z-40 bg-[#0a0a0f]/90 backdrop-blur-xl border-b border-[var(--border)] px-4 py-4" style={{ paddingTop: 'calc(1rem + var(--safe-area-top))' }}>
       <div className="max-w-lg mx-auto flex items-center justify-between">
         <div className="flex items-center gap-3">
           {backButton && (

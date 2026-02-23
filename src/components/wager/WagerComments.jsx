@@ -34,6 +34,29 @@ export default function WagerComments({ wagerId }) {
         content,
       });
     },
+    onMutate: async (content) => {
+      await qc.cancelQueries({ queryKey: ["comments", wagerId] });
+      const previous = qc.getQueryData(["comments", wagerId]);
+      
+      const profile = await base44.entities.UserProfile.filter({ user_email: user.email });
+      const optimisticComment = {
+        id: `temp-${Date.now()}`,
+        wager_id: wagerId,
+        user_email: user.email,
+        username: profile[0]?.username || user.full_name,
+        avatar_url: profile[0]?.avatar_url,
+        content,
+        likes: [],
+        created_date: new Date().toISOString(),
+      };
+      
+      qc.setQueryData(["comments", wagerId], (old = []) => [optimisticComment, ...old]);
+      return { previous };
+    },
+    onError: (err, variables, context) => {
+      qc.setQueryData(["comments", wagerId], context.previous);
+      toast.error("Failed to post comment");
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["comments", wagerId] });
       setComment("");
@@ -49,6 +72,28 @@ export default function WagerComments({ wagerId }) {
         ? likes.filter(e => e !== user.email)
         : [...likes, user.email];
       return base44.entities.Comment.update(commentId, { likes: newLikes });
+    },
+    onMutate: async (commentId) => {
+      await qc.cancelQueries({ queryKey: ["comments", wagerId] });
+      const previous = qc.getQueryData(["comments", wagerId]);
+      
+      qc.setQueryData(["comments", wagerId], (old = []) => 
+        old.map(comment => {
+          if (comment.id === commentId) {
+            const likes = comment.likes || [];
+            const newLikes = likes.includes(user.email)
+              ? likes.filter(e => e !== user.email)
+              : [...likes, user.email];
+            return { ...comment, likes: newLikes };
+          }
+          return comment;
+        })
+      );
+      
+      return { previous };
+    },
+    onError: (err, variables, context) => {
+      qc.setQueryData(["comments", wagerId], context.previous);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["comments", wagerId] }),
   });

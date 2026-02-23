@@ -48,35 +48,35 @@
  * The mainPage value must match a key in the PAGES object exactly.
  */
 import AdminPanel from './pages/AdminPanel';
+import Chat from './pages/Chat';
 import CreateWager from './pages/CreateWager';
 import Home from './pages/Home';
 import Landing from './pages/Landing';
 import Leaderboard from './pages/Leaderboard';
+import Messages from './pages/Messages';
 import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import Terms from './pages/Terms';
 import WagerDetails from './pages/WagerDetails';
 import Wallet from './pages/Wallet';
-import Messages from './pages/Messages';
-import Chat from './pages/Chat';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "AdminPanel": AdminPanel,
+    "Chat": Chat,
     "CreateWager": CreateWager,
     "Home": Home,
     "Landing": Landing,
     "Leaderboard": Leaderboard,
+    "Messages": Messages,
     "Notifications": Notifications,
     "Profile": Profile,
     "Settings": Settings,
     "Terms": Terms,
     "WagerDetails": WagerDetails,
     "Wallet": Wallet,
-    "Messages": Messages,
-    "Chat": Chat,
 }
 
 export const pagesConfig = {
