@@ -1,0 +1,39 @@
+{
+  "name": "ChatRoom",
+  "type": "object",
+  "properties": {
+    "room_type": {
+      "type": "string",
+      "enum": [
+        "direct",
+        "wager"
+      ],
+      "description": "Type of chat room"
+    },
+    "participant_emails": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of participant emails"
+    },
+    "wager_id": {
+      "type": "string",
+      "description": "Related wager ID if room_type is wager"
+    },
+    "last_message": {
+      "type": "string"
+    },
+    "last_message_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_message_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "room_type",
+    "participant_emails"
+  ]
+}

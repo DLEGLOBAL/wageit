@@ -1,0 +1,113 @@
+{
+  "name": "UserProfile",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string"
+    },
+    "username": {
+      "type": "string"
+    },
+    "bio": {
+      "type": "string"
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "banner_url": {
+      "type": "string"
+    },
+    "is_verified": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_id_verified": {
+      "type": "boolean",
+      "default": false
+    },
+    "wins": {
+      "type": "number",
+      "default": 0
+    },
+    "losses": {
+      "type": "number",
+      "default": 0
+    },
+    "total_wagered": {
+      "type": "number",
+      "default": 0
+    },
+    "reputation_score": {
+      "type": "number",
+      "default": 100
+    },
+    "reputation_tier": {
+      "type": "string",
+      "enum": [
+        "bronze",
+        "silver",
+        "gold",
+        "platinum",
+        "diamond"
+      ],
+      "default": "bronze"
+    },
+    "completed_wagers": {
+      "type": "number",
+      "default": 0
+    },
+    "current_win_streak": {
+      "type": "number",
+      "default": 0
+    },
+    "best_win_streak": {
+      "type": "number",
+      "default": 0
+    },
+    "is_online": {
+      "type": "boolean",
+      "default": false
+    },
+    "last_active": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "referral_code": {
+      "type": "string"
+    },
+    "friends_count": {
+      "type": "number",
+      "default": 0
+    },
+    "followers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "following": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "blocked_users": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "is_banned": {
+      "type": "boolean",
+      "default": false
+    },
+    "wager_cooldown_until": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_email",
+    "username"
+  ]
+}

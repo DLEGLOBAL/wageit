@@ -1,0 +1,44 @@
+{
+  "name": "Wallet",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Owner email"
+    },
+    "balance": {
+      "type": "number",
+      "default": 0,
+      "description": "Available balance in cents"
+    },
+    "escrow_balance": {
+      "type": "number",
+      "default": 0,
+      "description": "Funds locked in active wagers"
+    },
+    "total_deposited": {
+      "type": "number",
+      "default": 0
+    },
+    "total_withdrawn": {
+      "type": "number",
+      "default": 0
+    },
+    "total_won": {
+      "type": "number",
+      "default": 0
+    },
+    "total_lost": {
+      "type": "number",
+      "default": 0
+    },
+    "is_frozen": {
+      "type": "boolean",
+      "default": false,
+      "description": "Frozen by admin for fraud"
+    }
+  },
+  "required": [
+    "user_email"
+  ]
+}

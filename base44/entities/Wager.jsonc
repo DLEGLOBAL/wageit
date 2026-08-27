@@ -1,0 +1,114 @@
+{
+  "name": "Wager",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "wager_type": {
+      "type": "string",
+      "enum": [
+        "skill_based",
+        "event_outcome",
+        "time_challenge"
+      ],
+      "default": "skill_based"
+    },
+    "stake_amount": {
+      "type": "number",
+      "description": "Amount in cents"
+    },
+    "creator_email": {
+      "type": "string"
+    },
+    "creator_name": {
+      "type": "string"
+    },
+    "opponent_email": {
+      "type": "string",
+      "description": "Null for open challenges"
+    },
+    "opponent_name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "pending_funding",
+        "active",
+        "proof_submitted",
+        "disputed",
+        "completed",
+        "cancelled",
+        "expired"
+      ],
+      "default": "open"
+    },
+    "winner_email": {
+      "type": "string"
+    },
+    "privacy": {
+      "type": "string",
+      "enum": [
+        "public",
+        "private"
+      ],
+      "default": "public"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "proof_type": {
+      "type": "string",
+      "enum": [
+        "photo",
+        "video",
+        "link",
+        "any"
+      ],
+      "default": "any"
+    },
+    "creator_funded": {
+      "type": "boolean",
+      "default": false
+    },
+    "opponent_funded": {
+      "type": "boolean",
+      "default": false
+    },
+    "creator_proof_url": {
+      "type": "string"
+    },
+    "opponent_proof_url": {
+      "type": "string"
+    },
+    "creator_proof_note": {
+      "type": "string"
+    },
+    "opponent_proof_note": {
+      "type": "string"
+    },
+    "platform_fee_percent": {
+      "type": "number",
+      "default": 5
+    },
+    "is_boosted": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_featured": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "title",
+    "stake_amount",
+    "creator_email"
+  ]
+}

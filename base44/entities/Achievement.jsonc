@@ -1,0 +1,43 @@
+{
+  "name": "Achievement",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string"
+    },
+    "achievement_type": {
+      "type": "string",
+      "enum": [
+        "first_wager",
+        "first_win",
+        "win_streak_3",
+        "win_streak_5",
+        "win_streak_10",
+        "high_roller",
+        "verified_user",
+        "social_butterfly",
+        "dispute_resolver",
+        "perfect_record",
+        "ten_wins",
+        "fifty_wins",
+        "hundred_wins",
+        "early_adopter",
+        "comeback_kid",
+        "fearless",
+        "precision_master",
+        "big_spender"
+      ]
+    },
+    "unlocked_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "user_email",
+    "achievement_type"
+  ]
+}

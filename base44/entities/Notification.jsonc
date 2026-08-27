@@ -1,0 +1,42 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "wager_accepted",
+        "wager_expiring",
+        "proof_submitted",
+        "dispute_opened",
+        "funds_released",
+        "deposit_confirmed",
+        "wager_cancelled",
+        "wager_won",
+        "wager_lost",
+        "system"
+      ]
+    },
+    "wager_id": {
+      "type": "string"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "user_email",
+    "title",
+    "message"
+  ]
+}

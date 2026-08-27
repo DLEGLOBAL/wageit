@@ -1,0 +1,51 @@
+{
+  "name": "Dispute",
+  "type": "object",
+  "properties": {
+    "wager_id": {
+      "type": "string"
+    },
+    "filed_by": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "evidence_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "under_review",
+        "resolved"
+      ],
+      "default": "open"
+    },
+    "resolution": {
+      "type": "string",
+      "enum": [
+        "creator_wins",
+        "opponent_wins",
+        "draw_refund",
+        "cancelled"
+      ],
+      "description": "Final decision"
+    },
+    "moderator_notes": {
+      "type": "string"
+    },
+    "resolved_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "wager_id",
+    "filed_by",
+    "reason"
+  ]
+}

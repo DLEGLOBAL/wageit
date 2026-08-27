@@ -1,0 +1,27 @@
+{
+  "name": "RewardClaim",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string"
+    },
+    "reward_id": {
+      "type": "string"
+    },
+    "reward_name": {
+      "type": "string"
+    },
+    "points_spent": {
+      "type": "number"
+    },
+    "claimed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_email",
+    "reward_id",
+    "points_spent"
+  ]
+}

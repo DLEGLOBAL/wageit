@@ -1,0 +1,36 @@
+{
+  "name": "Referral",
+  "type": "object",
+  "properties": {
+    "referrer_email": {
+      "type": "string"
+    },
+    "referred_email": {
+      "type": "string"
+    },
+    "referral_code": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "completed"
+      ],
+      "default": "pending"
+    },
+    "reward_amount": {
+      "type": "number",
+      "default": 500,
+      "description": "Bonus in cents"
+    },
+    "reward_claimed": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "referrer_email",
+    "referral_code"
+  ]
+}

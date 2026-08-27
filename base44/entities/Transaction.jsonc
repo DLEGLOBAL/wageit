@@ -1,0 +1,50 @@
+{
+  "name": "Transaction",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "deposit",
+        "withdrawal",
+        "escrow_lock",
+        "escrow_release",
+        "wager_win",
+        "wager_loss",
+        "platform_fee",
+        "refund"
+      ]
+    },
+    "amount": {
+      "type": "number",
+      "description": "Amount in cents, positive"
+    },
+    "description": {
+      "type": "string"
+    },
+    "wager_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "completed",
+        "failed"
+      ],
+      "default": "completed"
+    },
+    "reference_id": {
+      "type": "string",
+      "description": "External payment ref"
+    }
+  },
+  "required": [
+    "user_email",
+    "type",
+    "amount"
+  ]
+}
